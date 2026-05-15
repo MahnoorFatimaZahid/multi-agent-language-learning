@@ -6,9 +6,16 @@ export type Level    = "beginner"|"intermediate"|"advanced";
 
 export interface User    { id: string; email: string; displayName: string; createdAt: string; }
 export interface Session {
-  id: string; userId: string; language: Language; level: Level;
-  status: "active"|"completed"|"abandoned"; title: string | null;
-  startedAt: string; endedAt: string | null; durationSeconds: number | null;
+  id:              string;
+  userId:          string;
+  language:        Language;
+  level:           Level;
+  status:          "active" | "completed" | "abandoned";
+  title:           string | null;
+  scenarioContext: Record<string, unknown> | null;   // ← add this line
+  startedAt:       string;
+  endedAt:         string | null;
+  durationSeconds: number | null;
 }
 export interface Message { id: string; sessionId: string; role: "user"|"assistant"; content: string; createdAt: string; }
 export interface AuthResponse { token: string; user: User; }
@@ -31,7 +38,7 @@ async function request<T>(path: string, options: { body?: unknown; method?: stri
       "Content-Type": "application/json",
       ...(authToken ? { Authorization: `Bearer ${authToken}` } : {}),
     },
-    body: body !== undefined ? JSON.stringify(body) : undefined,
+    body: body !== undefined ? JSON.stringify(body) : null,
   });
 
   const data = await res.json().catch(() => ({ error: "Invalid response", code: "PARSE_ERROR" }));

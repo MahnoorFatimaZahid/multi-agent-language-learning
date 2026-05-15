@@ -6,7 +6,7 @@ const GROQ_BASE_URL = "https://api.groq.com/openai/v1";
 
 export const MODELS = {
   MAIN: "llama-3.3-70b-versatile",
-  FAST: "llama3-8b-8192", // used in Phase 4 for feedback analysis
+  FAST: "llama-3.1-8b-instant",
 } as const;
 
 export interface ChatMessage {

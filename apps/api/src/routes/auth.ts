@@ -36,6 +36,7 @@ authRouter.post(
         })),
       }, 422);
     }
+    return;
   }),
   async (c) => {
     const { email, password, displayName } = c.req.valid("json");
@@ -69,6 +70,7 @@ authRouter.post(
     if (!result.success) {
       return c.json({ error: "Invalid email or password format", code: "VALIDATION_ERROR" }, 422);
     }
+    return;
   }),
   async (c) => {
     const { email, password } = c.req.valid("json");

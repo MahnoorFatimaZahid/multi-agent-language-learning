@@ -15,6 +15,7 @@ const sql = postgres(connectionString, {
   max: 10,
   idle_timeout: 20,
   connect_timeout: 10,
+  prepare: false, // required for Supabase PgBouncer (transaction mode)
 });
 
 export const db = drizzle(sql, { schema });

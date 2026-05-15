@@ -25,6 +25,7 @@ sessionsRouter.post(
   "/",
   zValidator("json", createSessionSchema, (result, c) => {
     if (!result.success) return c.json({ error: "Invalid session parameters" }, 422);
+    return;
   }),
   async (c) => {
     const userId = c.get("userId");
@@ -58,12 +59,13 @@ sessionsRouter.get("/", async (c) => {
     .limit(limit)
     .offset(offset);
 
-  const [{ total }] = await db.select({ total: count() })
+  const [countRow] = await db.select({ total: count() })
     .from(sessions).where(eq(sessions.userId, userId));
+  const total = countRow?.total ?? 0;
 
   return c.json({
     sessions: rows,
-    pagination: { total: total ?? 0, limit, offset, hasMore: offset + limit < (total ?? 0) },
+    pagination: { total, limit, offset, hasMore: offset + limit < total },
   });
 });
 
@@ -90,6 +92,7 @@ sessionsRouter.patch(
   "/:id/end",
   zValidator("json", endSessionSchema, (result, c) => {
     if (!result.success) return c.json({ error: "Invalid request" }, 422);
+    return;
   }),
   async (c) => {
     const userId    = c.get("userId");

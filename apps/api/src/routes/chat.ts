@@ -27,6 +27,7 @@ chatRouter.post(
         issues: result.error.issues.map(i => ({ field: i.path.join("."), message: i.message })),
       }, 422);
     }
+    return;
   }),
   async (c) => {
     const userId = c.get("userId");

@@ -5,6 +5,7 @@ import {
   uuid,
   integer,
   pgEnum,
+    jsonb,    
 } from "drizzle-orm/pg-core";
 import { relations } from "drizzle-orm";
 
@@ -44,6 +45,7 @@ export const sessions = pgTable("sessions", {
   language:        languageEnum("language").notNull(),
   level:           levelEnum("level").notNull(),
   status:          sessionStatusEnum("status").notNull().default("active"),
+  scenarioContext: jsonb("scenario_context"),   // ← add this line
   title:           text("title"),
   startedAt:       timestamp("started_at", { withTimezone: true }).defaultNow().notNull(),
   endedAt:         timestamp("ended_at", { withTimezone: true }),
