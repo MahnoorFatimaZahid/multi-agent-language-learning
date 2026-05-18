@@ -7,13 +7,13 @@ import {
   ArrowLeft, Send, Loader2, StopCircle,
   Mic, Volume2, VolumeX, Wifi, WifiOff,
 } from "lucide-react";
-import { useAuth }            from "../../../libs/auth-context";
-import { useChatSocket }      from "../../../libs/use-chat-socket";
-import { useAudioCapture }    from "../../../libs/use-audio-capture";
-import { useSpeechSynthesis } from "../../../libs/use-speech-synthesis";
-import { LANGUAGE_CONFIG, LEVEL_CONFIG, formatDuration, cn } from "../../../libs/utils";
-import type { Language, Level } from "../../../libs/api";
-import type { ChatMessage }   from "../../../libs/use-chat-socket";
+import { useAuth }            from "../../libs/auth-context";
+import { useChatSocket }      from "../../libs/use-chat-socket";
+import { useAudioCapture }    from "../../libs/use-audio-capture";
+import { useSpeechSynthesis } from "../../libs/use-speech-synthesis";
+import { LANGUAGE_CONFIG, LEVEL_CONFIG, formatDuration, cn } from "../../libs/utils";
+import type { Language, Level } from "../../libs/api";
+import type { ChatMessage }   from "../../libs/use-chat-socket";
 
 // ── Typing dots ────────────────────────────────────────────────────────────
 function TypingDots() {

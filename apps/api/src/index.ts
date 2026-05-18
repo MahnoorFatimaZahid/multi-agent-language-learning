@@ -17,6 +17,7 @@ import { db } from "./db/client";
 import { sessions } from "./db/schema";
 
 import { eq } from "drizzle-orm";
+import { feedbackRouter } from "./routes/feedback";
 
 const app = new Hono();
 
@@ -56,6 +57,8 @@ app.use("*", honoLogger());
 app.route("/auth", authRouter);
 app.route("/sessions", sessionsRouter);
 app.route("/chat", chatRouter);
+app.route("/feedback", feedbackRouter);
+
 
 // ─────────────────────────────────────────────
 // Health Check
@@ -150,20 +153,21 @@ Bun.serve<WSData>({
 
   websocket: {
     open(ws) {
-      const { connectionId } = ws.data;
+  const { connectionId, userId } = ws.data as {
+    connectionId: string;
+    userId:       string;
+    sessionId:    string;
+  };
 
-      const wsSession = new WSSession((msg) => {
-        ws.send(JSON.stringify(msg));
-      });
+  // userId pass karo WSSession ko
+  const wsSession = new WSSession((msg) => {
+    ws.send(JSON.stringify(msg));
+  }, userId);  // ← userId add kiya
 
-      activeWS.set(connectionId, {
-        wsSession,
-      });
+  activeWS.set(connectionId, { wsSession });
 
-      logger.info("WebSocket opened", {
-        connectionId,
-      });
-    },
+  logger.info("WebSocket opened", { connectionId });
+},
 
     async message(ws, data) {
       const { connectionId } = ws.data;

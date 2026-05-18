@@ -88,10 +88,10 @@ export default function DashboardPage() {
         {sessions.length > 0 && (
           <div className="grid grid-cols-3 gap-3 mb-8">
             {[
-              { icon: MessageSquare, label: "Sessions",          value: sessions.length },
-              { icon: Clock,         label: "Minutes practiced", value: totalMins },
-              { icon: Globe,         label: "Languages",         value: uniqueLangs },
-            ].map(({ icon: Icon, label, value }) => (
+  { icon: MessageSquare, label: "Sessions",          value: sessions.length },
+  { icon: Clock,         label: "Minutes practiced", value: totalMins },
+  { icon: Globe,         label: "Languages",         value: uniqueLangs },
+].map(({ icon: Icon, label, value }) => (
               <div key={label} className="card p-4 flex items-center gap-3">
                 <div className="w-8 h-8 rounded-lg bg-accent-soft flex items-center justify-center">
                   <Icon size={14} className="text-accent" />
