@@ -31,10 +31,11 @@ app.use(
   "*",
   cors({
     origin: (origin) => {
-      const allowed = [
-        process.env["FRONTEND_URL"] ?? "http://localhost:3000",
-        "http://localhost:3000",
-      ];
+    const allowed = [
+  process.env["FRONTEND_URL"] ?? "http://localhost:3000",
+  "http://localhost:3000",
+  "https://multi-agent-language-learning.vercel.app",
+];
 
       if (!origin || allowed.includes(origin)) {
         return origin ?? "*";
