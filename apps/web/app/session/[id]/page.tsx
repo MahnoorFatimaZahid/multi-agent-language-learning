@@ -242,12 +242,16 @@ export default function SessionPage({ params }: { params: { id: string } }) {
     return () => { if (timerRef.current) clearInterval(timerRef.current); };
   }, []);
 
-  useEffect(() => {
-    if (connectionState === "ended" && timerRef.current) {
-      clearInterval(timerRef.current);
-    }
-  }, [connectionState]);
-
+useEffect(() => {
+  if (connectionState === "ended") {
+    const t = setTimeout(
+      () => router.push(`/session/${params.id}/summary`),
+      1500
+    );
+    return () => clearTimeout(t);
+  }
+  return undefined;
+}, [connectionState, params.id, router]);
   // ── Auto scroll ───────────────────────────────────────────────────────
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
