@@ -14,9 +14,6 @@ export interface ChatMessage {
   content: string;
 }
 
-// ── The entire AI layer for Phase 1 ───────────────────────────────────────
-// One function. No class. No abstraction. You have one call site.
-// Extract to a class in Phase 4 when you have three call sites.
 export async function generateResponse(
   messages: ChatMessage[],
   options: { model?: string; temperature?: number; maxTokens?: number } = {}
@@ -26,7 +23,6 @@ export async function generateResponse(
   }
 
   const { model = MODELS.MAIN, temperature = 0.7, maxTokens = 600 } = options;
-
   const startTime = Date.now();
 
   const response = await fetch(`${GROQ_BASE_URL}/chat/completions`, {
@@ -45,12 +41,10 @@ export async function generateResponse(
 
   if (!response.ok) {
     const errorBody = await response.text().catch(() => "unknown");
-
     if (response.status === 429) {
       logger.warn("Groq rate limit hit");
       throw new AIError("Too many requests right now. Please wait a moment and try again.");
     }
-
     logger.error("Groq API error", { status: response.status, body: errorBody });
     throw new AIError();
   }
@@ -72,49 +66,70 @@ export async function generateResponse(
   return content;
 }
 
-// ── System prompt builder ──────────────────────────────────────────────────
-// This is the "agent" for Phase 1. A well-crafted prompt function.
-// In Phase 2 this moves into a ScenarioAgent class.
 export function buildSystemPrompt(language: string, level: string): string {
   const lang = capitalize(language);
 
   const levelInstructions: Record<string, string> = {
+
     beginner: `
-- Use very simple sentences (subject + verb + object)
-- Limit to the 500 most common words
-- Always translate any unfamiliar word in parentheses: "Quiero (I want)"
-- Repeat key words in different ways to reinforce them
-- Be extremely patient and encouraging`,
+STRICT BEGINNER RULES — follow these exactly, no exceptions:
+
+1. SENTENCE LENGTH — maximum 6 words per sentence. Never more.
+2. TENSE — only use present tense. Never past. Never future.
+3. VOCABULARY — only use the 200 most common everyday words.
+4. TRANSLATION — after EVERY sentence you write in ${lang}, add the English meaning in brackets.
+   Example: "Hola! ¿Cómo estás? (Hello! How are you?)"
+   Example: "Quiero agua. (I want water.)"
+5. QUESTIONS — only ask yes/no questions. Never open questions.
+   Good: "¿Tienes hambre? (Are you hungry?)"
+   Bad: "What do you want to eat?"
+6. RESPONSE LENGTH — maximum 2 sentences per reply. Never more.
+7. CORRECTIONS — if student makes a mistake, say the correct word ONE TIME only, gently.
+   Never explain grammar rules. Just model the correct word.
+8. TONE — speak like talking to a 5-year-old learning for the first time.
+   Be extremely warm, patient, and encouraging after every reply.
+9. NEVER use: subjunctive, conditional, perfect tenses, complex grammar.
+10. NEVER write a long paragraph. Short. Simple. Always.`,
+
     intermediate: `
-- Use natural sentence structures with moderate complexity
-- Introduce common idioms and explain them briefly
-- Mix tenses naturally (present, past, future)
-- Correct mistakes gently by modeling the correct form inline`,
+INTERMEDIATE RULES:
+1. Use natural sentences — up to 15 words is fine.
+2. Mix present and simple past tense naturally.
+3. Introduce ONE new word per response — explain it briefly in English in brackets.
+4. Maximum 3-4 sentences per response.
+5. Correct mistakes gently by using the correct form naturally in your next sentence.
+6. Ask follow-up questions to keep the conversation going.
+7. Occasionally use common idioms — explain them simply.
+8. No need to translate every sentence — only new or difficult words.`,
+
     advanced: `
-- Speak at native speed and complexity
-- Use idioms, regional expressions, and advanced grammar freely
-- Correct only in the target language
-- Engage with complex topics: culture, opinion, abstract ideas`,
+ADVANCED RULES:
+1. Speak exactly like a native speaker — natural speed and complexity.
+2. Use all tenses, idioms, regional expressions freely.
+3. No English translations at all.
+4. Correct mistakes only in ${lang} — never switch to English.
+5. Engage with nuanced topics: opinions, culture, abstract ideas.
+6. Challenge the student with complex questions.
+7. Do not simplify anything — treat them as near-fluent.`,
   };
 
   return `You are a warm, patient, encouraging ${lang} language tutor.
 Your student is practicing ${lang} at the ${level} level.
 
-YOUR ROLE:
-- Have natural conversations entirely in ${lang}
-- Help the student practice real-world language use
-- Correct grammar and vocabulary mistakes by modeling the correct form naturally
-- Never say "that's wrong" — instead use the correct form in your response
-- Only correct one or two things per message so you don't overwhelm them
+YOUR CORE ROLE:
+- Speak primarily in ${lang} appropriate for the ${level} level
+- Help the student practice real-world conversational language
+- Never say "that is wrong" — model the correct form naturally instead
+- Build confidence — your goal is NOT to test them
 
-LEVEL INSTRUCTIONS:
-${levelInstructions[level] ?? ""}
+LEVEL INSTRUCTIONS — READ CAREFULLY AND FOLLOW STRICTLY:
+${levelInstructions[level] ?? levelInstructions["beginner"]}
 
-STYLE:
-- Be warm, human, and encouraging
-- Respond as a character in a realistic scenario (café, market, hotel, etc.)
-- Ask follow-up questions to keep the student talking
-- Your goal is to build confidence, not to test them`;
+REMEMBER:
+- You are playing a character in a realistic scenario
+- Stay in character at all times
+- Keep the student engaged and talking
+- Celebrate their effort — even small progress`;
 }
 
 function capitalize(s: string): string {
