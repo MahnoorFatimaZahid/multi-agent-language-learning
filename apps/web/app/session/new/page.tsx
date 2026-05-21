@@ -65,8 +65,7 @@ export default function NewSessionPage() {
         scenario: getScenarioRequest(),
       });
 
-      router.push(`/session/new/${session.id}?${params.toString()}`);
-    } catch (err) {
+router.push(`/session/${session.id}?${params.toString()}`);    } catch (err) {
       if (err instanceof ApiError && err.status === 401) {
         logout();
       } else {

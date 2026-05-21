@@ -201,6 +201,8 @@ export default function SessionPage({ params }: { params: { id: string } }) {
     scenarioRequest,
     onSTTResult: (transcript) => {
       setInput(transcript);
+        // 3 second baad clear karo — user dekh sake kya transcribe hua
+  setTimeout(() => setInput(""), 3000);
     },
   });
 
@@ -214,6 +216,7 @@ export default function SessionPage({ params }: { params: { id: string } }) {
   } = useAudioCapture({
     onAudioReady: (audioBase64, mimeType) => {
       sendAudio(audioBase64, mimeType);
+      setInput("");
     },
   });
 
