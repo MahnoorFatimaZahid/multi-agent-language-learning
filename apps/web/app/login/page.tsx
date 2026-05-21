@@ -1,98 +1,179 @@
 "use client";
-import { useState, useEffect } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
+
+import { useState, useEffect, Suspense } from "react";
+import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { Eye, EyeOff, Loader2 } from "lucide-react";
-import { authApi, ApiError } from "../libs/api";
+import { ArrowLeft, Loader2 } from "lucide-react";
+import { sessionsApi, ApiError, type Language, type Level } from "../libs/api";
 import { useAuth } from "../libs/auth-context";
-import { cn } from "../libs/utils";
+import { LANGUAGE_CONFIG, LEVEL_CONFIG, cn } from "../libs/utils";
 
-export default function LoginPage() {
+const SCENARIOS = [
+  { id: "cafe",       icon: "☕", label: "Café",       hint: "Order coffee, ask for the menu, pay the bill" },
+  { id: "market",     icon: "🛒", label: "Market",     hint: "Browse stalls, ask prices, negotiate a deal" },
+  { id: "directions", icon: "🗺️", label: "Directions", hint: "Ask how to get somewhere, understand a route" },
+  { id: "restaurant", icon: "🍽️", label: "Restaurant", hint: "Book a table, order food, deal with a wrong order" },
+  { id: "hotel",      icon: "🏨", label: "Hotel",      hint: "Check in, ask for amenities, report a problem" },
+  { id: "transport",  icon: "🚕", label: "Transport",  hint: "Hail a cab, buy tickets, ask about trains" },
+  { id: "doctor",     icon: "🏥", label: "Doctor",     hint: "Describe symptoms, understand advice" },
+  { id: "custom",     icon: "✏️", label: "Custom",     hint: "Describe your own scenario in detail" },
+];
+
+function NewSessionForm() {
   const router = useRouter();
-  const params = useSearchParams();
-  const { login, user } = useAuth();
+  const { user, logout, isLoading: authLoading } = useAuth();
 
-  const [email, setEmail]       = useState("");
-  const [password, setPassword] = useState("");
-  const [showPw, setShowPw]     = useState(false);
-  const [loading, setLoading]   = useState(false);
-  const [error, setError]       = useState<string | null>(null);
-
-  useEffect(() => { if (user) router.replace("/dashboard"); }, [user, router]);
+  const [language,   setLanguage]   = useState<Language>("spanish");
+  const [level,      setLevel]      = useState<Level>("beginner");
+  const [scenarioId, setScenarioId] = useState("cafe");
+  const [custom,     setCustom]     = useState("");
+  const [creating,   setCreating]   = useState(false);
+  const [error,      setError]      = useState<string | null>(null);
 
   useEffect(() => {
-    if (params.get("demo") === "true") {
-      setEmail("demo@lingua-ai.com");
-      setPassword("demo1234");
-    }
-  }, [params]);
+    if (!authLoading && !user) router.replace("/login");
+  }, [authLoading, user, router]);
 
-  async function handleSubmit(e: React.FormEvent) {
-    e.preventDefault();
+  if (authLoading || !user) return null;
+
+  function getScenarioRequest(): string {
+    if (scenarioId === "custom") return custom.trim();
+    return SCENARIOS.find(s => s.id === scenarioId)?.hint ?? scenarioId;
+  }
+
+  const canStart = scenarioId !== "custom" || custom.trim().length >= 10;
+
+  async function handleStart() {
+    if (!canStart || creating) return;
+    setCreating(true);
     setError(null);
-    setLoading(true);
     try {
-      const { token, user: u } = await authApi.login({ email, password });
-      login(token, u);
-      router.push("/dashboard");
+      const { session } = await sessionsApi.create({ language, level });
+      const params = new URLSearchParams({
+        language,
+        level,
+        scenario: getScenarioRequest(),
+      });
+      router.push(`/session/${session.id}?${params.toString()}`);
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : "Something went wrong.");
-    } finally {
-      setLoading(false);
+      if (err instanceof ApiError && err.status === 401) logout();
+      else { setError("Failed to create session."); setCreating(false); }
     }
   }
 
   return (
-    <div className="min-h-dvh flex items-center justify-center px-4 bg-paper">
-      <div className="w-full max-w-sm">
-        <div className="text-center mb-8">
-          <Link href="/" className="inline-flex items-center gap-2 mb-5">
-            <div className="w-8 h-8 bg-ink rounded-lg flex items-center justify-center">
-              <span className="text-paper text-sm font-bold">L</span>
-            </div>
+    <div className="min-h-dvh bg-paper">
+      <header className="border-b border-border bg-white">
+        <div className="max-w-2xl mx-auto px-6 py-4 flex items-center gap-4">
+          <Link href="/dashboard" className="btn-ghost p-2 -ml-2">
+            <ArrowLeft size={18} />
           </Link>
-          <h1 className="text-2xl font-semibold text-ink mb-1">Welcome back</h1>
-          <p className="text-sm text-muted">Sign in to continue practicing</p>
+          <div>
+            <h1 className="text-base font-semibold text-ink">New session</h1>
+            <p className="text-xs text-muted">Configure your practice session</p>
+          </div>
         </div>
+      </header>
 
-        {params.get("demo") === "true" && (
-          <div className="mb-4 p-3 rounded-xl bg-accent-soft border border-accent/20 text-xs text-accent text-center">
-            Demo credentials filled in — click Sign in to explore
+      <main className="max-w-2xl mx-auto px-6 py-8 space-y-8">
+        {error && (
+          <div className="p-3 rounded-xl bg-red-50 border border-red-100 text-sm text-danger">
+            {error}
           </div>
         )}
 
-        <form onSubmit={handleSubmit} className="card p-6 space-y-4">
-          {error && (
-            <div className="p-3 rounded-xl bg-red-50 border border-red-100 text-sm text-danger">{error}</div>
-          )}
-          <div>
-            <label className="block text-xs font-medium text-ink mb-1.5" htmlFor="email">Email</label>
-            <input id="email" type="email" value={email} required autoComplete="email"
-              onChange={e => { setEmail(e.target.value); setError(null); }}
-              placeholder="you@example.com" className="input" />
-          </div>
-          <div>
-            <label className="block text-xs font-medium text-ink mb-1.5" htmlFor="pw">Password</label>
-            <div className="relative">
-              <input id="pw" type={showPw ? "text" : "password"} value={password} required
-                onChange={e => { setPassword(e.target.value); setError(null); }}
-                placeholder="••••••••" className="input pr-11" autoComplete="current-password" />
-              <button type="button" onClick={() => setShowPw(v => !v)}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-muted hover:text-ink transition-colors">
-                {showPw ? <EyeOff size={16} /> : <Eye size={16} />}
+        {/* Language */}
+        <section>
+          <p className="section-label mb-3">Language to practice</p>
+          <div className="grid grid-cols-4 gap-2">
+            {(Object.entries(LANGUAGE_CONFIG) as [Language, typeof LANGUAGE_CONFIG[Language]][]).map(([key, cfg]) => (
+              <button key={key} onClick={() => setLanguage(key)}
+                className={cn(
+                  "flex flex-col items-center gap-1.5 py-3 px-2 rounded-xl border transition-all",
+                  language === key
+                    ? "border-accent bg-accent-soft ring-1 ring-accent/30"
+                    : "bg-white border-border hover:border-accent/40"
+                )}>
+                <span className="text-2xl">{cfg.flag}</span>
+                <span className="text-xs font-medium text-ink">{cfg.label}</span>
               </button>
-            </div>
+            ))}
           </div>
-          <button type="submit" disabled={loading} className={cn("btn-primary w-full py-3", loading && "opacity-70")}>
-            {loading ? <><Loader2 size={16} className="animate-spin" /> Signing in…</> : "Sign in"}
-          </button>
-        </form>
+        </section>
 
-        <p className="text-center text-sm text-muted mt-4">
-          No account?{" "}
-          <Link href="/register" className="text-accent font-medium hover:underline">Register free</Link>
-        </p>
-      </div>
+        {/* Level */}
+        <section>
+          <p className="section-label mb-3">Your level</p>
+          <div className="grid grid-cols-3 gap-2">
+            {(Object.entries(LEVEL_CONFIG) as [Level, typeof LEVEL_CONFIG[Level]][]).map(([key, cfg]) => (
+              <button key={key} onClick={() => setLevel(key)}
+                className={cn(
+                  "py-3 px-4 rounded-xl border text-left transition-all",
+                  level === key
+                    ? "border-accent bg-accent-soft ring-1 ring-accent/30"
+                    : "bg-white border-border hover:border-accent/40"
+                )}>
+                <p className="text-sm font-medium text-ink">{cfg.label}</p>
+                <p className="text-xs text-muted mt-0.5 leading-snug">{cfg.description}</p>
+              </button>
+            ))}
+          </div>
+        </section>
+
+        {/* Scenario */}
+        <section>
+          <p className="section-label mb-3">Scenario</p>
+          <div className="grid grid-cols-2 gap-2 mb-3">
+            {SCENARIOS.map(s => (
+              <button key={s.id} onClick={() => setScenarioId(s.id)}
+                className={cn(
+                  "flex items-start gap-3 p-3 rounded-xl border text-left transition-all",
+                  scenarioId === s.id
+                    ? "border-accent bg-accent-soft ring-1 ring-accent/30"
+                    : "bg-white border-border hover:border-accent/40"
+                )}>
+                <span className="text-lg mt-0.5">{s.icon}</span>
+                <div>
+                  <p className="text-xs font-semibold text-ink">{s.label}</p>
+                  <p className="text-[11px] text-muted mt-0.5 leading-snug">{s.hint}</p>
+                </div>
+              </button>
+            ))}
+          </div>
+          {scenarioId === "custom" && (
+            <textarea
+              value={custom}
+              onChange={e => setCustom(e.target.value)}
+              placeholder="Describe your scenario..."
+              rows={3}
+              className="input resize-none text-sm"
+            />
+          )}
+        </section>
+
+        <button
+          onClick={handleStart}
+          disabled={creating || !canStart}
+          className={cn("btn-primary w-full py-4 text-base", (!canStart || creating) && "opacity-60")}
+        >
+          {creating
+            ? <><Loader2 size={18} className="animate-spin" /> Creating…</>
+            : <>Start practicing {LANGUAGE_CONFIG[language]?.flag}</>
+          }
+        </button>
+      </main>
     </div>
+  );
+}
+
+export default function NewSessionPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-dvh flex items-center justify-center bg-paper">
+        <div className="w-5 h-5 border-2 border-accent border-t-transparent rounded-full animate-spin" />
+      </div>
+    }>
+      <NewSessionForm />
+    </Suspense>
   );
 }
