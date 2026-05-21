@@ -1,47 +1,59 @@
 "use client";
+
 import { createContext, useContext, useEffect, useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
-import { authApi, type User } from "./../libs/api";
+import { authApi, type User } from "../libs/api";
 
 interface AuthCtx {
-  user: User | null;
+  user:      User | null;
   isLoading: boolean;
-  login: (token: string, user: User) => void;
-  logout: () => void;
+  login:     (token: string, user: User) => void;
+  logout:    () => void;
 }
 
 const AuthContext = createContext<AuthCtx | null>(null);
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
-  const router = useRouter();
-  const [user, setUser]           = useState<User | null>(null);
+  const router                    = useRouter();
+  const [user,      setUser]      = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     async function init() {
-      const token = localStorage.getItem("token");
-      const stored = localStorage.getItem("user");
-
-      if (!token) { setIsLoading(false); return; }
-
-      // Optimistically restore from localStorage (instant UI)
-      if (stored) {
-        try { setUser(JSON.parse(stored) as User); } catch { /* ignore */ }
-      }
-
-      // Validate with API in background
       try {
+        const token  = localStorage.getItem("token");
+        const stored = localStorage.getItem("user");
+
+        if (!token) {
+          setIsLoading(false);
+          return;
+        }
+
+        // Optimistically set from localStorage
+        if (stored) {
+          try {
+            setUser(JSON.parse(stored) as User);
+          } catch {
+            // ignore
+          }
+        }
+
+        // Validate with API
         const { user: validated } = await authApi.me();
         setUser(validated);
         localStorage.setItem("user", JSON.stringify(validated));
+
       } catch {
+        // Token invalid — clear
         localStorage.removeItem("token");
         localStorage.removeItem("user");
         setUser(null);
       } finally {
+        // Always set loading false — no matter what happens
         setIsLoading(false);
       }
     }
+
     void init();
   }, []);
 
