@@ -220,28 +220,31 @@ export default function SessionPage({ params }: { params: { id: string } }) {
     },
   });
 
-  // ── Speak AI messages when stream finishes ────────────────────────────
-  useEffect(() => {
-    if (isMuted) return;
-    const last = messages[messages.length - 1];
-    if (last?.role === "assistant" && streamingContent === "") {
-      speak(last.content);
-    }
-  }, [messages, streamingContent, isMuted, speak]);
+// Speak AI messages
+useEffect(() => {
+  if (isMuted) return undefined;
+  const last = messages[messages.length - 1];
+  if (last?.role === "assistant" && streamingContent === "") {
+    speak(last.content);
+  }
+  return undefined;
+}, [messages, streamingContent, isMuted, speak]);
 
-  // ── Cancel speech when user starts recording ──────────────────────────
-  useEffect(() => {
-    if (isRecording) cancelSpeech();
-  }, [isRecording, cancelSpeech]);
+// Cancel speech when recording
+useEffect(() => {
+  if (isRecording) cancelSpeech();
+  return undefined;
+}, [isRecording, cancelSpeech]);
 
-  // ── Timer ─────────────────────────────────────────────────────────────
-  useEffect(() => {
-    timerRef.current = setInterval(() => {
-      setElapsed(Math.floor((Date.now() - startTimeRef.current) / 1000));
-    }, 1000);
-    return () => { if (timerRef.current) clearInterval(timerRef.current); };
-  }, []);
+// Stop timer when ended
+useEffect(() => {
+  if (connectionState === "ended" && timerRef.current) {
+    clearInterval(timerRef.current);
+  }
+  return undefined;
+}, [connectionState]);
 
+// Redirect when ended
 useEffect(() => {
   if (connectionState === "ended") {
     const t = setTimeout(
@@ -252,21 +255,6 @@ useEffect(() => {
   }
   return undefined;
 }, [connectionState, params.id, router]);
-  // ── Auto scroll ───────────────────────────────────────────────────────
-  useEffect(() => {
-    bottomRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages, streamingContent]);
-
-  // ── Redirect on session end ───────────────────────────────────────────
-  useEffect(() => {
-    if (connectionState === "ended") {
-      const t = setTimeout(
-        () => router.push(`/session/${params.id}/summary`),
-        1500
-      );
-      return () => clearTimeout(t);
-    }
-  }, [connectionState, params.id, router]);
 
   // ── Handlers ──────────────────────────────────────────────────────────
   function handleSend() {
