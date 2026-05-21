@@ -2,7 +2,7 @@
 
 > Practice real conversations with an AI tutor. Speak or type. Get instant feedback. No judgment — just progress.
 
-**Live demo:** [https://lingua-ai.vercel.app](https://lingua-ai.vercel.app)
+**Live demo:** [lingua-ai-multi-agent.vercel.app](https://lingua-ai.vercel.app)
 **Demo login:** `demo@lingua-ai.com` / `demo1234`
 
 ---
